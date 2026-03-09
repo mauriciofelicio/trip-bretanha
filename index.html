@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Meta Tags Anti-Cache para garantir a versão mais recente sempre -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
     <title>Roteiro: Bretanha e Normandia</title>
     
     <!-- Leaflet CSS e JS (Carregamento síncrono para evitar falhas) -->
@@ -201,7 +207,32 @@
             background-color: var(--tertiary); /* Laranja Ferrugem elegante */
             border: 2px solid white;
             border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            /* O box-shadow recria o contorno escuro e a sombra vistos na sua imagem */
+            box-shadow: 0 0 0 1.5px #2b3a4a, 0 3px 5px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .small-accent-pin:hover {
+            transform: scale(1.2); /* Aumenta ligeiramente ao passar o rato */
+        }
+
+        /* Estilo da etiqueta com o nome (tooltip) replicando a imagem */
+        .leaflet-tooltip.custom-map-tooltip {
+            background-color: white;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            color: #333;
+            font-weight: 600;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        /* Pinta o triângulo apontador do tooltip de branco */
+        .leaflet-tooltip.custom-map-tooltip::before {
+            border-top-color: white; 
         }
 
         /* Responsividade para Telemóveis */
@@ -443,35 +474,44 @@
             L.marker(coords.base3, { icon: iconBase3 }).addTo(map).bindPopup("<b>Base 3</b><br>Quimper (3 Noites)");
             L.marker(coords.base4, { icon: iconBase4 }).addTo(map).bindPopup("<b>Base 4</b><br>Vannes (3 Noites)");
 
-            // Locais a Visitar (Pinos Vermelhos Atualizados com as Novas Adições)
+            // Locais a Visitar (Pinos Vermelhos Atualizados com Links do Google Maps)
             const places = [
-                { name: "Omaha Beach", pos: [49.3696, -0.8711] },
-                { name: "Cemitério Americano", pos: [49.3592, -0.8532] },
-                { name: "Bayeux", pos: [49.2746, -0.7003] },
-                { name: "Mont Saint-Michel", pos: [48.6360, -1.5115] },
-                { name: "Cancale", pos: [48.6690, -1.8522] },
-                { name: "Dinan / Rio Rance", pos: [48.4545, -2.0401] },
-                { name: "Fougères", pos: [48.3536, -1.2064] }, /* Novo */
-                { name: "Vitré", pos: [48.1245, -1.2148] },    /* Novo */
-                { name: "Cap Fréhel", pos: [48.6842, -2.3194] },
-                { name: "Fort la Latte", pos: [48.6685, -2.2854] },
-                { name: "Ploumanac'h", pos: [48.8365, -3.4831] },
-                { name: "Sept-Îles", pos: [48.8789, -3.4819] },
-                { name: "Pointe de Pen-Hir", pos: [48.2585, -4.6234] },
-                { name: "Locronan", pos: [48.0984, -4.2078] },
-                { name: "Pointe du Raz", pos: [48.0396, -4.7410] }, /* Novo */
-                { name: "Concarneau", pos: [47.8726, -3.9136] },
-                { name: "Pont-Aven", pos: [47.8556, -3.7465] },
-                { name: "Alinhamentos de Carnac", pos: [47.5901, -3.0820] },
-                { name: "Côte Sauvage (Quiberon)", pos: [47.5027, -3.1436] },
-                { name: "Rochefort-en-Terre", pos: [47.6997, -2.3361] }, /* Novo */
-                { name: "Josselin", pos: [47.9536, -2.5472] } /* Novo */
+                { name: "Omaha Beach", pos: [49.3696, -0.8711], url: "https://www.google.com/maps/search/?api=1&query=Omaha+Beach+Normandy+France" },
+                { name: "Cemitério Americano", pos: [49.3592, -0.8532], url: "https://www.google.com/maps/search/?api=1&query=Normandy+American+Cemetery+Colleville-sur-Mer" },
+                { name: "Bayeux", pos: [49.2746, -0.7003], url: "https://www.google.com/maps/search/?api=1&query=Bayeux+Tapestry+Museum+France" },
+                { name: "Mont Saint-Michel", pos: [48.6360, -1.5115], url: "https://www.google.com/maps/search/?api=1&query=Mont+Saint-Michel+France" },
+                { name: "Cancale", pos: [48.6690, -1.8522], url: "https://www.google.com/maps/search/?api=1&query=Port+de+la+Houle+Cancale+France" },
+                { name: "Dinan / Rio Rance", pos: [48.4545, -2.0401], url: "https://www.google.com/maps/search/?api=1&query=Port+de+Dinan+Lanvallay+France" },
+                { name: "Fougères", pos: [48.3536, -1.2064], url: "https://www.google.com/maps/search/?api=1&query=Chateau+de+Fougeres+France" },
+                { name: "Vitré", pos: [48.1245, -1.2148], url: "https://www.google.com/maps/search/?api=1&query=Vitre+France" },
+                { name: "Cap Fréhel", pos: [48.6842, -2.3194], url: "https://www.google.com/maps/search/?api=1&query=Cap+Frehel+France" },
+                { name: "Fort la Latte", pos: [48.6685, -2.2854], url: "https://www.google.com/maps/search/?api=1&query=Fort+la+Latte+Plevenon+France" },
+                { name: "Ploumanac'h", pos: [48.8365, -3.4831], url: "https://www.google.com/maps/search/?api=1&query=Phare+de+Men+Ruz+Ploumanach+France" },
+                { name: "Sept-Îles", pos: [48.8789, -3.4819], url: "https://www.google.com/maps/search/?api=1&query=Archipel+des+Sept-Iles+Bretagne+France" },
+                { name: "Pointe de Pen-Hir", pos: [48.2585, -4.6234], url: "https://www.google.com/maps/search/?api=1&query=Pointe+de+Pen-Hir+Crozon+France" },
+                { name: "Locronan", pos: [48.0984, -4.2078], url: "https://www.google.com/maps/search/?api=1&query=Locronan+Finistere+France" },
+                { name: "Pointe du Raz", pos: [48.0396, -4.7410], url: "https://www.google.com/maps/search/?api=1&query=Pointe+du+Raz+Plogoff+France" },
+                { name: "Concarneau", pos: [47.8726, -3.9136], url: "https://www.google.com/maps/search/?api=1&query=Ville+Close+Concarneau+France" },
+                { name: "Pont-Aven", pos: [47.8556, -3.7465], url: "https://www.google.com/maps/search/?api=1&query=Pont-Aven+Finistere+France" },
+                { name: "Alinhamentos de Carnac", pos: [47.5901, -3.0820], url: "https://www.google.com/maps/search/?api=1&query=Alignements+de+Carnac+France" },
+                { name: "Côte Sauvage (Quiberon)", pos: [47.5027, -3.1436], url: "https://www.google.com/maps/search/?api=1&query=Cote+Sauvage+Quiberon+France" },
+                { name: "Rochefort-en-Terre", pos: [47.6997, -2.3361], url: "https://www.google.com/maps/search/?api=1&query=Rochefort-en-Terre+France" },
+                { name: "Josselin", pos: [47.9536, -2.5472], url: "https://www.google.com/maps/search/?api=1&query=Chateau+de+Josselin+France" }
             ];
 
             places.forEach(place => {
-                L.marker(place.pos, { icon: iconRedPin })
+                const marker = L.marker(place.pos, { icon: iconRedPin })
                  .addTo(map)
-                 .bindTooltip(`<b>${place.name}</b>`, { direction: 'top', offset: [0, -5] });
+                 .bindTooltip(`<span>${place.name}</span> <span style="font-size: 0.85em; opacity: 0.7;">🔗</span>`, { 
+                     direction: 'top', 
+                     offset: [0, -5],
+                     className: 'custom-map-tooltip'
+                 });
+                 
+                // Abre o link do Google Maps numa nova aba quando o pino é clicado
+                marker.on('click', () => {
+                    window.open(place.url, '_blank');
+                });
             });
 
             // Desenhar a rota principal entre as bases
