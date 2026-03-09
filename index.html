@@ -11,11 +11,12 @@
     
     <style>
         :root {
-            --primary: #0f172a;
-            --secondary: #2563eb;
-            --bg-light: #f8fafc;
-            --text-main: #334155;
-            --border-color: #e2e8f0;
+            --primary: #112a46; /* Azul Marinho Profundo (Elegância) */
+            --secondary: #4a6fa5; /* Azul Ardósia Suave (Interatividade) */
+            --tertiary: #c16622; /* Laranja Ferrugem/Terracota (Destaques e Pinos) */
+            --bg-light: #f5f7f9; /* Fundo Pérola Suave */
+            --text-main: #2b3a4a; /* Cinza Ardósia Escuro (Leitura confortável) */
+            --border-color: #dce1e6;
         }
 
         body, html {
@@ -114,9 +115,9 @@
         }
 
         .fly-btn {
-            background: #eff6ff;
+            background: rgba(74, 111, 165, 0.1);
             color: var(--secondary);
-            border: 1px solid #bfdbfe;
+            border: 1px solid rgba(74, 111, 165, 0.3);
             padding: 8px 12px;
             border-radius: 6px;
             cursor: pointer;
@@ -135,7 +136,7 @@
 
         .day-title {
             font-weight: bold;
-            color: var(--secondary);
+            color: var(--tertiary); /* Alterado de secondary para tertiary */
             font-size: 1.1rem;
             display: flex;
             justify-content: space-between;
@@ -144,8 +145,8 @@
 
         .map-link {
             font-size: 0.8rem;
-            background: #f1f5f9;
-            color: #475569;
+            background: rgba(74, 111, 165, 0.08);
+            color: var(--secondary);
             padding: 4px 8px;
             border-radius: 20px;
             text-decoration: none;
@@ -153,7 +154,7 @@
         }
 
         .map-link:hover {
-            background: #cbd5e0;
+            background: rgba(74, 111, 165, 0.15);
             color: var(--primary);
         }
 
@@ -178,7 +179,7 @@
         .clickable-place:hover {
             color: var(--primary);
             border-bottom: 1px solid var(--primary);
-            background-color: #eff6ff;
+            background-color: rgba(74, 111, 165, 0.05);
         }
 
         /* Ícones Customizados do Mapa */
@@ -196,8 +197,8 @@
             background: var(--primary);
         }
 
-        .small-red-pin {
-            background-color: #ef4444; /* Vermelho vivo */
+        .small-accent-pin {
+            background-color: var(--tertiary); /* Laranja Ferrugem elegante */
             border: 2px solid white;
             border-radius: 50%;
             box-shadow: 0 2px 4px rgba(0,0,0,0.4);
@@ -433,7 +434,7 @@
             const iconBase3 = L.divIcon({ className: 'custom-marker', html: '3', iconSize: [28, 28] });
             const iconBase4 = L.divIcon({ className: 'custom-marker', html: '4', iconSize: [28, 28] });
 
-            const iconRedPin = L.divIcon({ className: 'small-red-pin', html: '', iconSize: [14, 14], iconAnchor: [7, 7] });
+            const iconRedPin = L.divIcon({ className: 'small-accent-pin', html: '', iconSize: [14, 14], iconAnchor: [7, 7] });
 
             // Adicionar os Marcadores das Bases
             L.marker(coords.nantes, { icon: iconNantes }).addTo(map).bindPopup("<b>Aeroporto de Nantes</b><br>Início e Fim");
@@ -475,7 +476,7 @@
 
             // Desenhar a rota principal entre as bases
             const route = [coords.nantes, coords.base1, coords.base2, coords.base3, coords.base4, coords.nantes];
-            const polyline = L.polyline(route, { color: '#2563eb', weight: 3, dashArray: '8, 8' }).addTo(map);
+            const polyline = L.polyline(route, { color: '#4a6fa5', weight: 3, dashArray: '8, 8' }).addTo(map);
 
             // Ajustar o mapa para mostrar toda a rota inicialmente
             map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
