@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roteiro: Bretanha e Normandia</title>
+    
+    <!-- Leaflet CSS e JS (Carregamento síncrono para evitar falhas) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #2563eb;
+            --bg-light: #f8fafc;
+            --text-main: #334155;
+            --border-color: #e2e8f0;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--text-main);
+            overflow: hidden; /* Evita scroll duplo no desktop */
+        }
+
+        /* Layout de Ecrã Dividido para Desktop */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        header p {
+            margin: 0;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Painel Esquerdo: Mapa Fixo */
+        .map-pane {
+            flex: 1;
+            height: 100%;
+            background: #e2e8f0;
+            position: relative;
+            z-index: 1;
+            border-right: 2px solid var(--border-color);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Painel Direito: Roteiro com Scroll Independente */
+        .itinerary-pane {
+            flex: 1;
+            max-width: 600px;
+            height: 100%;
+            overflow-y: auto;
+            background-color: var(--bg-light);
+            padding: 2rem;
+            scroll-behavior: smooth;
+        }
+
+        .base-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .base-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--bg-light);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .base-header h2 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .fly-btn {
+            background: #eff6ff;
+            color: var(--secondary);
+            border: 1px solid #bfdbfe;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .fly-btn:hover {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .day-block {
+            margin-bottom: 1.5rem;
+        }
+
+        .day-title {
+            font-weight: bold;
+            color: var(--secondary);
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .map-link {
+            font-size: 0.8rem;
+            background: #f1f5f9;
+            color: #475569;
+            padding: 4px 8px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: normal;
+        }
+
+        .map-link:hover {
+            background: #cbd5e0;
+            color: var(--primary);
+        }
+
+        .place-list {
+            margin-top: 0.5rem;
+            padding-left: 1.5rem;
+            color: #475569;
+        }
+
+        .place-list li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Estilo para tornar os nomes das atrações clicáveis */
+        .clickable-place {
+            cursor: pointer;
+            color: var(--secondary);
+            border-bottom: 1px dashed var(--secondary);
+            transition: all 0.2s;
+        }
+
+        .clickable-place:hover {
+            color: var(--primary);
+            border-bottom: 1px solid var(--primary);
+            background-color: #eff6ff;
+        }
+
+        /* Ícones Customizados do Mapa */
+        .custom-marker {
+            background: var(--secondary);
+            color: white;
+            border-radius: 50%;
+            border: 2px solid white;
+            text-align: center;
+            font-weight: bold;
+            line-height: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .airport-marker {
+            background: var(--primary);
+        }
+
+        .small-red-pin {
+            background-color: #ef4444; /* Vermelho vivo */
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        /* Responsividade para Telemóveis */
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+                overflow: auto;
+            }
+            .map-pane {
+                flex: none;
+                height: 40vh; /* Mapa ocupa 40% da tela no topo do telemóvel */
+                border-right: none;
+                border-bottom: 2px solid var(--border-color);
+            }
+            .itinerary-pane {
+                flex: none;
+                max-width: 100%;
+                height: auto;
+                overflow: visible;
+                padding: 1rem;
+            }
+            body, html {
+                overflow: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <div>
+                <h1>Bretanha e Normandia</h1>
+                <p>O Roteiro Definitivo • 4 Bases • 14 Noites</p>
+            </div>
+            <div>
+                <p>🚗 4 Amigos</p>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- PAINEL ESQUERDO: MAPA -->
+            <div class="map-pane">
+                <div id="map"></div>
+            </div>
+
+            <!-- PAINEL DIREITO: ROTEIRO -->
+            <div class="itinerary-pane" id="itinerary">
+                
+                <div class="base-card">
+                    <p style="margin-top:0; color:#64748b; font-style:italic;">
+                        Dica: O transporte sugerido é o aluguer de viatura em Nantes. As estadias baseiam-se em Airbnbs do tipo "longère" (4 quartos e 4 casas de banho).
+                    </p>
+                </div>
+
+                <!-- BASE 1 -->
+                <div class="base-card">
+                    <div class="base-header">
+                        <h2>📍 Base 1: Saint-Malo / Dinard (5 Noites)</h2>
+                        <button class="fly-btn" onclick="flyToMap(48.6493, -2.0257, 10)">Ver no Mapa</button>
+                    </div>
+                    
+                    <div class="day-block">
+                        <div class="day-title">Dia 1: Chegada & Saint-Malo <a href="https://www.google.com/maps/search/?api=1&query=Saint-Malo+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li>Chegada e check-in na propriedade.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(48.6493, -2.0257, 14)">Muralhas de Saint-Malo:</strong> Final de tarde a explorar a cidade dos corsários (Intra-Muros).</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 2: Normandia (Dia D & Bayeux) <a href="https://www.google.com/maps/search/?api=1&query=Omaha+Beach+Normandy+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(49.3696, -0.8711, 14)">Omaha Beach</strong> & <strong class="clickable-place" onclick="flyToMap(49.3592, -0.8532, 14)">Cemitério Americano:</strong> A mais famosa praia do Desembarque e as impressionantes cruzes brancas alinhadas.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(49.2746, -0.7003, 14)">Museu da Tapeçaria de Bayeux:</strong> Fica a apenas 25 minutos de Omaha Beach. Tela bordada do século XI com 70 metros.</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 3: Mont Saint-Michel & Cancale <a href="https://www.google.com/maps/search/?api=1&query=Mont+Saint-Michel+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(48.6360, -1.5115, 14)">Mont Saint-Michel:</strong> A icónica abadia medieval. Cheguem cedo.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(48.6690, -1.8522, 14)">Porto de Cancale:</strong> Degustação de ostras frescas diretamente nas bancas do porto à tarde.</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 4: Dinan & Rio Rance 🚲 <a href="https://www.google.com/maps/search/?api=1&query=Port+de+Dinan+Lanvallay+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(48.4545, -2.0401, 14)">Rua Jerzual:</strong> Em Dinan, uma rua medieval íngreme e intacta.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(48.4545, -2.0401, 13)">Caminho de Sirga do Rio Rance:</strong> Aluguem bicicletas no porto para um passeio plano e espetacular.</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 5: Fortalezas de Fougères & Vitré <a href="https://www.google.com/maps/search/?api=1&query=Chateau+de+Fougeres+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(48.3536, -1.2064, 15)">Château de Fougères:</strong> A maior fortaleza medieval da Europa, um feito notável da arquitetura militar.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(48.1245, -1.2148, 14)">Vitré:</strong> Cidade perfeitamente preservada com o seu próprio castelo imponente. Viagem perfeita pelo passado da Bretanha.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- BASE 2 -->
+                <div class="base-card">
+                    <div class="base-header">
+                        <h2>🌊 Base 2: Costa de Granito Rosa (3 Noites)</h2>
+                        <button class="fly-btn" onclick="flyToMap(48.8145, -3.4422, 10)">Ver no Mapa</button>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 6: Cap Fréhel & Fort la Latte <a href="https://www.google.com/maps/search/?api=1&query=Fort+la+Latte+Plevenon+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(48.6842, -2.3194, 14)">Cap Fréhel:</strong> Penhascos gigantescos de arenito rosa.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(48.6685, -2.2854, 15)">Fort la Latte:</strong> Castelo medieval construído na ponta de uma falésia (durante o trajeto entre as bases 1 e 2).</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 7: Caminho dos Aduaneiros <a href="https://www.google.com/maps/search/?api=1&query=Phare+de+Men+Ruz+Ploumanach+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(48.8365, -3.4831, 15)">Farol de Men Ruz (Ploumanac'h):</strong> O trilho costeiro revela rochas que parecem esculpidas à mão.</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 8: Arquipélago de Sept-Îles <a href="https://www.google.com/maps/search/?api=1&query=Archipel+des+Sept-Iles+Bretagne+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(48.8789, -3.4819, 13)">Passeio de barco:</strong> A reserva natural é o lar de papagaios-do-mar (puffins) e gansos-patolas.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- BASE 3 -->
+                <div class="base-card">
+                    <div class="base-header">
+                        <h2>🏰 Base 3: Quimper / Finistère (3 Noites)</h2>
+                        <button class="fly-btn" onclick="flyToMap(47.9960, -4.0964, 10)">Ver no Mapa</button>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 9: Península de Crozon & Locronan <a href="https://www.google.com/maps/search/?api=1&query=Locronan+Finistere+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(48.2585, -4.6234, 14)">Pointe de Pen-Hir:</strong> O "fim do mundo" celta. Vistas vertiginosas.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(48.0984, -4.2078, 15)">Locronan:</strong> Uma aldeia cénica feita inteiramente de granito (usada em filmes).</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 10: Quimper & Pointe du Raz <a href="https://www.google.com/maps/search/?api=1&query=Pointe+du+Raz+Plogoff+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(47.9960, -4.0964, 15)">Catedral de Saint-Corentin (Quimper):</strong> Obra-prima gótica. Degustação de cidra na zona.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(48.0396, -4.7410, 14)">Pointe du Raz:</strong> O cabo mais ocidental e selvagem de França, fustigado pelo oceano Atlântico.</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 11: Concarneau & Pont-Aven <a href="https://www.google.com/maps/search/?api=1&query=Ville+Close+Concarneau+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(47.8726, -3.9136, 15)">Ville Close:</strong> Antiga cidade fortificada numa ilhota dentro do porto de Concarneau.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(47.8556, -3.7465, 14)">Pont-Aven:</strong> A "Cidade dos Pintores" famosa pelos seus moinhos.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- BASE 4 -->
+                <div class="base-card">
+                    <div class="base-header">
+                        <h2>⛵ Base 4: Golfo de Morbihan (3 Noites)</h2>
+                        <button class="fly-btn" onclick="flyToMap(47.6582, -2.7608, 10)">Ver no Mapa</button>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 12: Carnac & Quiberon 🚲 <a href="https://www.google.com/maps/search/?api=1&query=Alignements+de+Carnac+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(47.5901, -3.0820, 14)">Alinhamentos de Carnac:</strong> Mais de 3.000 menires pré-históricos.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(47.5027, -3.1436, 13)">Côte Sauvage (Quiberon):</strong> Estrada costeira dramática, excelente para bicicletas elétricas ou carro.</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 13: Vannes <a href="https://www.google.com/maps/search/?api=1&query=Port+de+Vannes+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(47.6582, -2.7608, 15)">Centro Medieval:</strong> O porto desagua diretamente no centro da cidade, ladeado de muralhas.</li>
+                        </ul>
+                    </div>
+
+                    <div class="day-block">
+                        <div class="day-title">Dia 14: Rochefort-en-Terre & Josselin <a href="https://www.google.com/maps/search/?api=1&query=Rochefort-en-Terre+France" target="_blank" class="map-link">📍 Abrir Google Maps</a></div>
+                        <ul class="place-list">
+                            <li><strong class="clickable-place" onclick="flyToMap(47.6997, -2.3361, 15)">Rochefort-en-Terre:</strong> Fielmente eleita uma das aldeias mais bonitas de França, com ruas floridas e charmosas.</li>
+                            <li><strong class="clickable-place" onclick="flyToMap(47.9536, -2.5472, 15)">Château de Josselin:</strong> Um deslumbrante castelo renascentista à beira do canal Nantes-Brest, marcando o fim perfeito da viagem.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+
+        // Inicializar o mapa apenas quando todo o HTML estiver carregado (método robusto)
+        document.addEventListener('DOMContentLoaded', () => {
+            // Coordenadas das Bases
+            const coords = {
+                nantes: [47.1533, -1.6108],
+                base1: [48.6493, -2.0257],
+                base2: [48.8145, -3.4422],
+                base3: [47.9960, -4.0964],
+                base4: [47.6582, -2.7608]
+            };
+
+            // Criar o Mapa
+            map = L.map('map', {
+                zoomControl: true,
+                scrollWheelZoom: true
+            }).setView([48.0, -2.5], 7);
+
+            // Adicionar a camada do OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Definir os Ícones Customizados
+            const iconNantes = L.divIcon({ className: 'custom-marker airport-marker', html: '✈️', iconSize: [28, 28] });
+            const iconBase1 = L.divIcon({ className: 'custom-marker', html: '1', iconSize: [28, 28] });
+            const iconBase2 = L.divIcon({ className: 'custom-marker', html: '2', iconSize: [28, 28] });
+            const iconBase3 = L.divIcon({ className: 'custom-marker', html: '3', iconSize: [28, 28] });
+            const iconBase4 = L.divIcon({ className: 'custom-marker', html: '4', iconSize: [28, 28] });
+
+            const iconRedPin = L.divIcon({ className: 'small-red-pin', html: '', iconSize: [14, 14], iconAnchor: [7, 7] });
+
+            // Adicionar os Marcadores das Bases
+            L.marker(coords.nantes, { icon: iconNantes }).addTo(map).bindPopup("<b>Aeroporto de Nantes</b><br>Início e Fim");
+            L.marker(coords.base1, { icon: iconBase1 }).addTo(map).bindPopup("<b>Base 1</b><br>Saint-Malo (5 Noites)");
+            L.marker(coords.base2, { icon: iconBase2 }).addTo(map).bindPopup("<b>Base 2</b><br>Costa de Granito Rosa (3 Noites)");
+            L.marker(coords.base3, { icon: iconBase3 }).addTo(map).bindPopup("<b>Base 3</b><br>Quimper (3 Noites)");
+            L.marker(coords.base4, { icon: iconBase4 }).addTo(map).bindPopup("<b>Base 4</b><br>Vannes (3 Noites)");
+
+            // Locais a Visitar (Pinos Vermelhos Atualizados com as Novas Adições)
+            const places = [
+                { name: "Omaha Beach", pos: [49.3696, -0.8711] },
+                { name: "Cemitério Americano", pos: [49.3592, -0.8532] },
+                { name: "Bayeux", pos: [49.2746, -0.7003] },
+                { name: "Mont Saint-Michel", pos: [48.6360, -1.5115] },
+                { name: "Cancale", pos: [48.6690, -1.8522] },
+                { name: "Dinan / Rio Rance", pos: [48.4545, -2.0401] },
+                { name: "Fougères", pos: [48.3536, -1.2064] }, /* Novo */
+                { name: "Vitré", pos: [48.1245, -1.2148] },    /* Novo */
+                { name: "Cap Fréhel", pos: [48.6842, -2.3194] },
+                { name: "Fort la Latte", pos: [48.6685, -2.2854] },
+                { name: "Ploumanac'h", pos: [48.8365, -3.4831] },
+                { name: "Sept-Îles", pos: [48.8789, -3.4819] },
+                { name: "Pointe de Pen-Hir", pos: [48.2585, -4.6234] },
+                { name: "Locronan", pos: [48.0984, -4.2078] },
+                { name: "Pointe du Raz", pos: [48.0396, -4.7410] }, /* Novo */
+                { name: "Concarneau", pos: [47.8726, -3.9136] },
+                { name: "Pont-Aven", pos: [47.8556, -3.7465] },
+                { name: "Alinhamentos de Carnac", pos: [47.5901, -3.0820] },
+                { name: "Côte Sauvage (Quiberon)", pos: [47.5027, -3.1436] },
+                { name: "Rochefort-en-Terre", pos: [47.6997, -2.3361] }, /* Novo */
+                { name: "Josselin", pos: [47.9536, -2.5472] } /* Novo */
+            ];
+
+            places.forEach(place => {
+                L.marker(place.pos, { icon: iconRedPin })
+                 .addTo(map)
+                 .bindTooltip(`<b>${place.name}</b>`, { direction: 'top', offset: [0, -5] });
+            });
+
+            // Desenhar a rota principal entre as bases
+            const route = [coords.nantes, coords.base1, coords.base2, coords.base3, coords.base4, coords.nantes];
+            const polyline = L.polyline(route, { color: '#2563eb', weight: 3, dashArray: '8, 8' }).addTo(map);
+
+            // Ajustar o mapa para mostrar toda a rota inicialmente
+            map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+            
+            // Garantir que o mapa recalcula o seu tamanho após o layout carregar
+            setTimeout(() => { map.invalidateSize(); }, 500);
+        });
+
+        // Função para voar para um ponto no mapa ao clicar no botão
+        function flyToMap(lat, lng, zoomLevel) {
+            if(map) {
+                // Se não for passado um nível de zoom, assume 10 (ideal para as bases), caso contrário, usa o zoom exato (ex: 14 para atrações)
+                map.flyTo([lat, lng], zoomLevel || 10, {
+                    duration: 1.5 // Duração da animação em segundos
+                });
+            }
+        }
+    </script>
+</body>
+</html>
