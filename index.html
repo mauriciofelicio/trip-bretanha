@@ -89,22 +89,35 @@
         /* Botão flutuante para reset do mapa */
         .reset-view-btn {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1000; /* Fica acima do mapa do Leaflet */
+            top: 12px;
+            left: 55px; /* Colocado ao lado dos botões de zoom do mapa */
+            z-index: 9999; /* Camada máxima absoluta para nunca ser escondido */
             background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 16px;
+            padding: 8px 14px;
             border-radius: 8px;
             font-size: 0.95rem;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: all 0.2s;
+            transition: all 0.3s ease; /* Transição mais suave para o fade in/out */
             display: flex;
             align-items: center;
             gap: 8px;
+            /* Esconde o botão por defeito */
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateY(-10px);
+        }
+
+        /* Classe adicionada por JS para mostrar o botão de forma suave */
+        .reset-view-btn.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateY(0);
         }
 
         .reset-view-btn:hover {
@@ -276,8 +289,8 @@
                 border-bottom: 2px solid var(--border-color);
             }
             .reset-view-btn {
-                top: 10px;
-                right: 10px;
+                top: 12px;
+                left: 55px;
                 padding: 6px 10px;
                 font-size: 0.85rem;
             }
@@ -310,10 +323,11 @@
         <div class="main-content">
             <!-- PAINEL ESQUERDO: MAPA -->
             <div class="map-pane">
-                <button class="reset-view-btn" onclick="resetMapView()" title="Voltar a ver o roteiro completo">
+                <div id="map"></div>
+                <!-- Botão movido para DEPOIS do mapa no HTML para garantir sobreposição correta. ID adicionado. -->
+                <button id="reset-btn" class="reset-view-btn" onclick="resetMapView()" title="Voltar a ver o roteiro completo">
                     🗺️ Mostrar Tudo
                 </button>
-                <div id="map"></div>
             </div>
 
             <!-- PAINEL DIREITO: ROTEIRO -->
@@ -473,6 +487,7 @@
     <script>
         let map;
         let routeBounds; // Variável global para guardar os limites da rota completa
+        let isResetting = false; // Variável para controlar quando o mapa está a fazer o zoom automático inicial
 
         // Inicializar o mapa apenas quando todo o HTML estiver carregado (método robusto)
         document.addEventListener('DOMContentLoaded', () => {
@@ -559,9 +574,25 @@
             // Guardar os limites da rota para o botão "Mostrar Tudo" poder usar mais tarde
             routeBounds = polyline.getBounds();
 
+            // Indica que estamos a fazer o ajuste inicial da câmara, para não mostrar o botão prematuramente
+            isResetting = true;
+
             // Ajustar o mapa para mostrar toda a rota inicialmente
             map.fitBounds(routeBounds, { padding: [30, 30] });
             
+            // Ouvinte de eventos: deteta quando qualquer movimento ou zoom no mapa termina
+            map.on('moveend', () => {
+                const resetBtn = document.getElementById('reset-btn');
+                if (!isResetting) {
+                    // Se não for o reset automático do sistema, foi o utilizador que moveu o mapa. Mostramos o botão.
+                    resetBtn.classList.add('visible');
+                } else {
+                    // O movimento inicial (ou clique no "Mostrar Tudo") acabou. 
+                    // Reiniciamos a variável para que os próximos movimentos do utilizador mostrem o botão.
+                    isResetting = false;
+                }
+            });
+
             // Garantir que o mapa recalcula o seu tamanho após o layout carregar
             setTimeout(() => { map.invalidateSize(); }, 500);
         });
@@ -569,6 +600,8 @@
         // Função para voar para um ponto no mapa ao clicar nos nomes do roteiro
         function flyToMap(lat, lng, zoomLevel) {
             if(map) {
+                // Garante que o botão vai surgir quando voarmos para uma atração
+                isResetting = false; 
                 // Se não for passado um nível de zoom, assume 10 (ideal para as bases), caso contrário, usa o zoom exato (ex: 14 para atrações)
                 map.flyTo([lat, lng], zoomLevel || 10, {
                     duration: 1.5 // Duração da animação em segundos
@@ -579,6 +612,11 @@
         // Nova função para redefinir o mapa e mostrar toda a viagem novamente
         function resetMapView() {
             if (map && routeBounds) {
+                // Esconde o botão imediatamente ao ser clicado, com o fade-out
+                document.getElementById('reset-btn').classList.remove('visible');
+                // Avisa o sistema (no evento moveend) para não voltar a mostrar o botão no fim desta animação
+                isResetting = true;
+                
                 map.flyToBounds(routeBounds, {
                     padding: [30, 30],
                     duration: 1.5
