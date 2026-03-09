@@ -83,6 +83,34 @@
         #map {
             width: 100%;
             height: 100%;
+            z-index: 1;
+        }
+
+        /* Botão flutuante para reset do mapa */
+        .reset-view-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000; /* Fica acima do mapa do Leaflet */
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reset-view-btn:hover {
+            background: var(--tertiary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
         }
 
         /* Painel Direito: Roteiro com Scroll Independente */
@@ -247,6 +275,12 @@
                 border-right: none;
                 border-bottom: 2px solid var(--border-color);
             }
+            .reset-view-btn {
+                top: 10px;
+                right: 10px;
+                padding: 6px 10px;
+                font-size: 0.85rem;
+            }
             .itinerary-pane {
                 flex: none;
                 max-width: 100%;
@@ -276,6 +310,9 @@
         <div class="main-content">
             <!-- PAINEL ESQUERDO: MAPA -->
             <div class="map-pane">
+                <button class="reset-view-btn" onclick="resetMapView()" title="Voltar a ver o roteiro completo">
+                    🗺️ Mostrar Tudo
+                </button>
                 <div id="map"></div>
             </div>
 
@@ -435,6 +472,7 @@
 
     <script>
         let map;
+        let routeBounds; // Variável global para guardar os limites da rota completa
 
         // Inicializar o mapa apenas quando todo o HTML estiver carregado (método robusto)
         document.addEventListener('DOMContentLoaded', () => {
@@ -518,19 +556,32 @@
             const route = [coords.nantes, coords.base1, coords.base2, coords.base3, coords.base4, coords.nantes];
             const polyline = L.polyline(route, { color: '#4a6fa5', weight: 3, dashArray: '8, 8' }).addTo(map);
 
+            // Guardar os limites da rota para o botão "Mostrar Tudo" poder usar mais tarde
+            routeBounds = polyline.getBounds();
+
             // Ajustar o mapa para mostrar toda a rota inicialmente
-            map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+            map.fitBounds(routeBounds, { padding: [30, 30] });
             
             // Garantir que o mapa recalcula o seu tamanho após o layout carregar
             setTimeout(() => { map.invalidateSize(); }, 500);
         });
 
-        // Função para voar para um ponto no mapa ao clicar no botão
+        // Função para voar para um ponto no mapa ao clicar nos nomes do roteiro
         function flyToMap(lat, lng, zoomLevel) {
             if(map) {
                 // Se não for passado um nível de zoom, assume 10 (ideal para as bases), caso contrário, usa o zoom exato (ex: 14 para atrações)
                 map.flyTo([lat, lng], zoomLevel || 10, {
                     duration: 1.5 // Duração da animação em segundos
+                });
+            }
+        }
+
+        // Nova função para redefinir o mapa e mostrar toda a viagem novamente
+        function resetMapView() {
+            if (map && routeBounds) {
+                map.flyToBounds(routeBounds, {
+                    padding: [30, 30],
+                    duration: 1.5
                 });
             }
         }
